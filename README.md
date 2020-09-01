@@ -10,9 +10,3 @@
 - This is a PWA make with VueJS and Firebase
 
 Linced under the AGPLv3
-
-
-:
-
-
-
