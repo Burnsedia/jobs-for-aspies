@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import sys
 from pathlib import Path
 import os
 from datetime import timedelta
@@ -254,4 +255,16 @@ else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
     SECURE_SSL_REDIRECT = False
+
+
+if "test" in sys.argv:
+    STRIPE_LIVE_MODE = False
+    STRIPE_TEST_SECRET_KEY = "sk_test_dummy"
+    STRIPE_LIVE_SECRET_KEY = "sk_test_dummy"
+    STRIPE_JOB_CREDIT_WEBHOOK_SECRET = "whsec_dummy"
+    DJSTRIPE_WEBHOOK_SECRET = "whsec_dummy"
+
+    # Prevent dj-stripe from making API calls
+    DJSTRIPE_USE_NATIVE_JSONFIELD = True
+    STRIPE_API_HOST = "http://localhost"  # ensures no requests go out
 
