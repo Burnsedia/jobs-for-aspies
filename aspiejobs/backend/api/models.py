@@ -1,9 +1,21 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from taggit.managers import TaggableManager
 
-User = get_user_model()
+
+class User(AbstractUser):
+    ROLE_CHOICES = [
+        ("JOB_SEEKER", "Job Seeker"),
+        ("COMPANY", "Company"),
+        ("ADMIN", "Admin"),
+    ]
+
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default="JOB_SEEKER"
+    )
 
 class Company(models.Model):
     name = models.CharField(max_length=255, unique=True)
