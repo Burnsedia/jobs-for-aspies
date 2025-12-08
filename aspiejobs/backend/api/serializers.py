@@ -1,13 +1,35 @@
 from rest_framework import serializers
 from taggit.serializers import TaggitSerializer, TagListSerializerField
 from .models import User, Company, Job
+from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerializer
+from djoser.serializers import UserSerializer as DjoserUserSerializer
+from rest_framework import serializers
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
+class UserCreateSerializer(DjoserUserCreateSerializer):
+    """
+    Used by Djoser for registration:
+        POST /auth/users/
+
+    We inherit from Djoser's serializer so that password validation,
+    user creation logic, and signals still work.
+    """
+    class Meta(DjoserUserCreateSerializer.Meta):
         model = User
-        fields = ["id", "username", "email", "role"]
-        # stops role escalation via API
-        read_only_fields = ["role"]  
+        fields = ("id", "username", "email", "password")
+
+class UserSerializer(DjoserUserSerializer):
+    """
+    Used by Djoser for:
+        GET /auth/users/me/
+        GET /auth/users/<id>/
+
+    We extend it to include the user's role, but we keep it read-only.
+    """
+    role = serializers.CharField(read_only=True)
+
+    class Meta(DjoserUserSerializer.Meta):
+        model = User
+        fields = ("id", "username", "email", "role")
 
 class CompanySerializer(TaggitSerializer, serializers.ModelSerializer):
     industry = TagListSerializerField(required=False)
