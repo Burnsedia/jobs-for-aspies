@@ -1,8 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 from taggit.managers import TaggableManager
-
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -10,14 +10,32 @@ class User(AbstractUser):
         ("COMPANY", "Company"),
         ("ADMIN", "Admin"),
     ]
-
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
         default="JOB_SEEKER"
     )
+    # Set to True after successful Stripe checkout
+    has_active_job_posting_plan = models.BooleanField(
+        default=False,
+        help_text="True if this user has paid via Stripe and can post jobs."
+    )
+
+    def __str__(self):
+        return self.username
+
 
 class Company(models.Model):
+    # The account that owns this company profile
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="company_account",
+        null=True,
+        blank=True,
+        help_text="The user who owns this company account."
+    )
+
     name = models.CharField(max_length=255, unique=True)
     website = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -26,12 +44,15 @@ class Company(models.Model):
         blank=True,
         null=True
     )
+
     # Industry tags, "neurodivergent-friendly", "remote-first", etc.
     industry = TaggableManager(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+
 
 class Job(models.Model):
     JOB_TYPE_CHOICES = [
@@ -109,10 +130,21 @@ class Job(models.Model):
 
     # Must be remote or hybrid (rule enforced below)
     is_autism_friendly = models.BooleanField(default=False)
+
+    # Track who posted the job
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="jobs_posted"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
+        # Autism-friendly jobs must be Remote or Hybrid
         if self.is_autism_friendly and self.work_mode not in ["REMOTE", "HYBRID"]:
             raise ValidationError({
                 "work_mode": "Autism-friendly jobs must be Remote or Hybrid, not On-Site."
