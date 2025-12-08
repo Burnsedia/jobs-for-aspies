@@ -13,6 +13,8 @@ from .models import User, Company, Job
 from .serializers import CompanySerializer, JobSerializer
 from .permissions import ensure_user_can_post_job
 
+from rest_framework.pagination import PageNumberPagination
+
 
 stripe.api_key = (
     settings.STRIPE_LIVE_SECRET_KEY
@@ -20,10 +22,16 @@ stripe.api_key = (
     else settings.STRIPE_TEST_SECRET_KEY
 )
 
+class StandardPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all().order_by("-created_at")
     serializer_class = CompanySerializer
-
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["industry"]
     search_fields = ["name", "description"]
@@ -45,7 +53,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all().order_by("-created_at")
     serializer_class = JobSerializer
-
+    pagination_class = StandardPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         "company",
