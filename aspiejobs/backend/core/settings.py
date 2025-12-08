@@ -16,11 +16,13 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-in-production")
+SECRET_KEY = "dev-secret-key-offline-mode"
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+# Offline development ALWAYS uses DEBUG=True
+DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+# Allow localhost only (safer than "*")
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 SITE_ID = 1
 
@@ -38,8 +40,6 @@ INSTALLED_APPS = [
     "djoser",
     "djstripe",
     "taggit",
-    "django_filters",
-    "corsheaders",
     "api",
 ]
 
@@ -47,7 +47,6 @@ AUTH_USER_MODEL = "api.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -75,15 +74,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
-# PRODUCTION DATABASE (fallback to sqlite for dev)
+# Offline SQLite DB
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.environ.get("POSTGRES_DB", BASE_DIR / "db.sqlite3"),
-        "USER": os.environ.get("POSTGRES_USER", ""),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
-        "HOST": os.environ.get("POSTGRES_HOST", ""),
-        "PORT": os.environ.get("POSTGRES_PORT", ""),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -99,8 +94,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "static/"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -137,60 +131,39 @@ DJOSER = {
     },
 }
 
-STRIPE_LIVE_MODE = os.environ.get("STRIPE_LIVE_MODE", "False") == "True"
+# -----------------------------
+# Stripe configuration — OFFLINE MODE
+# Empty keys mean Stripe features simply won't run
+# but the backend will NOT crash.
+# -----------------------------
+STRIPE_LIVE_MODE = False
+STRIPE_TEST_SECRET_KEY = ""
+STRIPE_TEST_PUBLIC_KEY = ""
+STRIPE_LIVE_SECRET_KEY = ""
+STRIPE_LIVE_PUBLIC_KEY = ""
 
-STRIPE_TEST_SECRET_KEY = os.environ.get("STRIPE_TEST_SECRET_KEY", "")
-STRIPE_TEST_PUBLIC_KEY = os.environ.get("STRIPE_TEST_PUBLIC_KEY", "")
+STRIPE_SECRET_KEY = ""
+STRIPE_PUBLIC_KEY = ""
 
-STRIPE_LIVE_SECRET_KEY = os.environ.get("STRIPE_LIVE_SECRET_KEY", "")
-STRIPE_LIVE_PUBLIC_KEY = os.environ.get("STRIPE_LIVE_PUBLIC_KEY", "")
-
-STRIPE_SECRET_KEY = STRIPE_LIVE_SECRET_KEY if STRIPE_LIVE_MODE else STRIPE_TEST_SECRET_KEY
-STRIPE_PUBLIC_KEY = STRIPE_LIVE_PUBLIC_KEY if STRIPE_LIVE_MODE else STRIPE_TEST_PUBLIC_KEY
-
-DJSTRIPE_WEBHOOK_SECRET = os.environ.get("DJSTRIPE_WEBHOOK_SECRET", "")
+DJSTRIPE_WEBHOOK_SECRET = ""
 DJSTRIPE_USE_NATIVE_JSONFIELD = True
-DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
 
-STRIPE_JOB_POSTING_PRICE_ID = os.environ.get("STRIPE_JOB_POSTING_PRICE_ID", "")
-STRIPE_UNLIMITED_POSTING_PRICE_ID = os.environ.get("STRIPE_UNLIMITED_POSTING_PRICE_ID", "")
+STRIPE_JOB_POSTING_PRICE_ID = ""
+STRIPE_UNLIMITED_POSTING_PRICE_ID = ""
 
-STRIPE_SUCCESS_URL = os.environ.get("STRIPE_SUCCESS_URL", "https://example.com/success")
-STRIPE_CANCEL_URL = os.environ.get("STRIPE_CANCEL_URL", "https://example.com/cancel")
+STRIPE_SUCCESS_URL = "http://localhost:3000/success"
+STRIPE_CANCEL_URL = "http://localhost:3000/cancel"
 
-STRIPE_JOB_CREDIT_WEBHOOK_SECRET = os.environ.get("STRIPE_JOB_CREDIT_WEBHOOK_SECRET", "")
-
-# PRODUCTION CORS
-if not DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = [
-        origin.strip()
-        for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
-        if origin.strip()
-    ]
-else:
-    CORS_ALLOW_ALL_ORIGINS = True
-
-# SECURITY / HTTPS
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
-X_FRAME_OPTIONS = "DENY"
+STRIPE_JOB_CREDIT_WEBHOOK_SECRET = ""
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
 
-# EMAIL (Djoser password reset)
-EMAIL_BACKEND = os.environ.get(
-    "EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
-)
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@example.com")
+# -----------------------------
+# OFFLINE MODE SECURITY
+# No HTTPS, no HSTS, no redirects
+# -----------------------------
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_SSL_REDIRECT = False
 
