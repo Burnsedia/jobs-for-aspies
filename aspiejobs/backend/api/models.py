@@ -97,15 +97,6 @@ class Job(models.Model):
 
     # Must be remote or hybrid (rule enforced below)
     is_autism_friendly = models.BooleanField(default=False)
-
-    posted_by = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="jobs_posted"
-    )
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
