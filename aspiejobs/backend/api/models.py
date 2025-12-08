@@ -90,17 +90,16 @@ class StripeEvent(models.Model):
         return self.event_id
 
 class Company(models.Model):
-    owner = models.OneToOneField(
+
+    owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="company_account",
-        null=True,
+        related_name="companies",
+        null=True,   # temporarily allow null so migration succeeds
         blank=True,
     )
-
     name = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
-
     website = models.URLField(
         blank=True,
         null=True,
