@@ -151,4 +151,5 @@ STRIPE_CANCEL_URL = os.environ.get("STRIPE_CANCEL_URL", "http://localhost:3000/c
 STRIPE_JOB_CREDIT_WEBHOOK_SECRET = os.environ.get("STRIPE_JOB_CREDIT_WEBHOOK_SECRET", "")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
 
