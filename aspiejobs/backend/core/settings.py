@@ -16,14 +16,11 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-in-production")
+
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
-    if host.strip()
-] or ["localhost"]
+ALLOWED_HOSTS = ["*"]
 
 SITE_ID = 1
 
