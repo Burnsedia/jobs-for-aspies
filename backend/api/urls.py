@@ -37,4 +37,3 @@ urlpatterns = [
         name="stripe-job-credit-webhook",
     ),
 ]
-

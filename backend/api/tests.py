@@ -59,11 +59,6 @@ class BaseAPITest(TestCase):
             is_autism_friendly=True,
         )
 
-
-# ---------------------------------------------------
-# AUTH TESTS
-# ---------------------------------------------------
-
 class AuthTests(BaseAPITest):
 
     def test_register_user(self):
@@ -81,11 +76,6 @@ class AuthTests(BaseAPITest):
         })
         self.assertEqual(response.status_code, 200)
         self.assertIn("access", response.data)
-
-
-# ---------------------------------------------------
-# COMPANY TESTS
-# ---------------------------------------------------
 
 class CompanyAPITests(BaseAPITest):
 
@@ -113,11 +103,6 @@ class CompanyAPITests(BaseAPITest):
         response = self.client.post("/api/companies/", payload)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data["name"], "New Co")
-
-
-# ---------------------------------------------------
-# JOB TESTS
-# ---------------------------------------------------
 
 class JobAPITests(BaseAPITest):
 
@@ -151,11 +136,6 @@ class JobAPITests(BaseAPITest):
         response = self.client.post("/api/jobs/", payload)
         self.assertEqual(response.status_code, 201)
 
-
-# ---------------------------------------------------
-# STRIPE CHECKOUT TESTS
-# ---------------------------------------------------
-
 class StripeTests(BaseAPITest):
 
     @patch("stripe.checkout.Session.create")
@@ -177,11 +157,6 @@ class StripeTests(BaseAPITest):
         response = self.client.post("/api/stripe/checkout/subscription/")
         self.assertEqual(response.status_code, 201)
 
-
-# ---------------------------------------------------
-# STRIPE WEBHOOK TEST
-# ---------------------------------------------------
-
 class WebhookTests(BaseAPITest):
 
     @patch("stripe.Webhook.construct_event")
@@ -201,4 +176,3 @@ class WebhookTests(BaseAPITest):
 
         self.user_company.refresh_from_db()
         self.assertTrue(self.user_company.has_active_job_posting_plan)
-
