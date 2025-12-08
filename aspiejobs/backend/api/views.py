@@ -1,9 +1,11 @@
+
 import stripe
 from django.conf import settings
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from django_filters.rest_framework import DjangoFilterBackend
 
 from djstripe.models import Customer
 
@@ -12,21 +14,20 @@ from .serializers import CompanySerializer, JobSerializer
 from .permissions import ensure_user_can_post_job
 
 
-# Use test/live secret key depending on mode
 stripe.api_key = (
     settings.STRIPE_LIVE_SECRET_KEY
     if getattr(settings, "STRIPE_LIVE_MODE", False)
     else settings.STRIPE_TEST_SECRET_KEY
 )
 
-
-# ===========================
-#      COMPANY VIEWSET
-# ===========================
-
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all().order_by("-created_at")
     serializer_class = CompanySerializer
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["industry"]
+    search_fields = ["name", "description"]
+    ordering_fields = ["name", "created_at"]
 
     def get_permissions(self):
         if self.request.method in ["GET", "HEAD", "OPTIONS"]:
@@ -41,14 +42,20 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
         serializer.save(owner=user)
 
-
-# ===========================
-#        JOB VIEWSET
-# ===========================
-
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all().order_by("-created_at")
     serializer_class = JobSerializer
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = [
+        "company",
+        "work_mode",
+        "job_type",
+        "tags",
+        "is_autism_friendly",
+    ]
+    search_fields = ["title", "description", "requirements", "responsibilities"]
+    ordering_fields = ["created_at", "min_salary", "max_salary"]
 
     def get_permissions(self):
         if self.request.method in ["GET", "HEAD", "OPTIONS"]:
@@ -58,11 +65,10 @@ class JobViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
 
-        # Centralized business rules
+        # Check posting permissions
         ensure_user_can_post_job(user)
 
-        # If they don't have an active subscription and DO have a credit,
-        # consume the one-time job credit.
+        # If user has 1-time credit but no subscription, consume credit
         if not user.has_active_subscription and user.has_active_job_posting_plan:
             user.has_active_job_posting_plan = False
             user.save()
@@ -78,7 +84,7 @@ class JobViewSet(viewsets.ModelViewSet):
 
         if user.role != "ADMIN":
             if not hasattr(user, "company_account") or job.company != user.company_account:
-                raise PermissionDenied("You can only edit jobs for your own company.")
+                raise PermissionDenied("You can only edit jobs from your own company.")
 
         return super().perform_update(serializer)
 
@@ -91,15 +97,7 @@ class JobViewSet(viewsets.ModelViewSet):
 
         return super().perform_destroy(instance)
 
-
-# ===========================
-#  STRIPE: ONE-TIME JOB CREDIT
-# ===========================
-
 class CreateJobPostingCheckoutView(APIView):
-    """
-    Creates a Stripe Checkout Session (one-time payment) for a job posting credit.
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -108,7 +106,6 @@ class CreateJobPostingCheckoutView(APIView):
         if user.role != "COMPANY":
             raise PermissionDenied("Only company accounts can purchase job credits.")
 
-        # dj-stripe customer
         customer, _ = Customer.get_or_create(subscriber=user)
 
         try:
@@ -128,16 +125,7 @@ class CreateJobPostingCheckoutView(APIView):
 
         return Response({"url": checkout_session.url}, status=status.HTTP_201_CREATED)
 
-
-# ===========================
-#  STRIPE: SUBSCRIPTION (UNLIMITED)
-# ===========================
-
 class CreateSubscriptionCheckoutView(APIView):
-    """
-    Creates a Stripe Checkout Session for an unlimited job posting subscription.
-    The actual subscription lifecycle is managed by dj-stripe via its webhook.
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -165,13 +153,6 @@ class CreateSubscriptionCheckoutView(APIView):
 
         return Response({"url": checkout_session.url}, status=status.HTTP_201_CREATED)
 
-
-# ===========================
-#  STRIPE: JOB CREDIT WEBHOOK
-#  (ONLY for one-time job credits)
-#  Subscriptions handled by dj-stripe.
-# ===========================
-
 class JobCreditWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -181,23 +162,19 @@ class JobCreditWebhookView(APIView):
         endpoint_secret = settings.STRIPE_JOB_CREDIT_WEBHOOK_SECRET
 
         try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, endpoint_secret
-            )
+            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
         except Exception:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        # Dedupe events by event.id
-        event_id = event["id"]
-        if StripeEvent.objects.filter(event_id=event_id).exists():
-            return Response(status=status.HTTP_200_OK)
-        StripeEvent.objects.create(event_id=event_id)
+        event_type = event.get("type")
 
-        if event["type"] == "checkout.session.completed":
+        if event_type == "checkout.session.completed":
             session = event["data"]["object"]
+
             if session.get("mode") == "payment":
                 user_id = session.get("client_reference_id")
-                if user_id is not None:
+
+                if user_id:
                     try:
                         user = User.objects.get(id=user_id)
                         user.has_active_job_posting_plan = True
@@ -206,4 +183,3 @@ class JobCreditWebhookView(APIView):
                         pass
 
         return Response(status=status.HTTP_200_OK)
-
