@@ -16,15 +16,43 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "dev-secret-key-offline-mode"
+# ==========================
+# CORE / SECURITY
+# ==========================
 
-# Offline development ALWAYS uses DEBUG=True
-DEBUG = True
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-dev-key-do-not-use-in-production",
+)
 
-# Allow localhost only (safer than "*")
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# Default: True for local/offline dev; set DJANGO_DEBUG=False in prod
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+
+# Comma-separated list in env for prod, fallback to localhost only
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    if host.strip()
+]
+
+# Optional Fly.io app name (adds myapp.fly.dev automatically)
+FLY_APP = os.environ.get("FLY_APP_NAME")
+if FLY_APP:
+    ALLOWED_HOSTS.append(f"{FLY_APP}.fly.dev")
 
 SITE_ID = 1
+
+# Optional CSRF trusted origins (for SPA/frontend domains)
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+
+# ==========================
+# APPLICATIONS
+# ==========================
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -40,10 +68,16 @@ INSTALLED_APPS = [
     "djoser",
     "djstripe",
     "taggit",
+    "django_filters",
     "api",
 ]
 
 AUTH_USER_MODEL = "api.User"
+
+
+# ==========================
+# MIDDLEWARE / URLS / TEMPLATES
+# ==========================
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -74,13 +108,37 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
-# Offline SQLite DB
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+
+# ==========================
+# DATABASE
+# ==========================
+
+DB_ENGINE = os.environ.get("DB_ENGINE", "django.db.backends.sqlite3")
+
+if DB_ENGINE == "django.db.backends.sqlite3":
+    DATABASES = {
+        "default": {
+            "ENGINE": DB_ENGINE,
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    # Example: DB_ENGINE = "django.db.backends.postgresql"
+    DATABASES = {
+        "default": {
+            "ENGINE": DB_ENGINE,
+            "NAME": os.environ.get("POSTGRES_DB", "postgres"),
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+            "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        }
+    }
+
+
+# ==========================
+# AUTH / PASSWORDS
+# ==========================
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -89,15 +147,31 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+
+# ==========================
+# I18N / TZ
+# ==========================
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+
+# ==========================
+# STATIC & MEDIA
+# ==========================
+
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+
+# ==========================
+# DRF / JWT / DJOSER
+# ==========================
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -131,39 +205,53 @@ DJOSER = {
     },
 }
 
-# -----------------------------
-# Stripe configuration — OFFLINE MODE
-# Empty keys mean Stripe features simply won't run
-# but the backend will NOT crash.
-# -----------------------------
-STRIPE_LIVE_MODE = False
-STRIPE_TEST_SECRET_KEY = ""
-STRIPE_TEST_PUBLIC_KEY = ""
-STRIPE_LIVE_SECRET_KEY = ""
-STRIPE_LIVE_PUBLIC_KEY = ""
 
-STRIPE_SECRET_KEY = ""
-STRIPE_PUBLIC_KEY = ""
+# ==========================
+# STRIPE / DJSTRIPE
+# ==========================
 
-DJSTRIPE_WEBHOOK_SECRET = ""
+STRIPE_LIVE_MODE = os.environ.get("STRIPE_LIVE_MODE", "False") == "True"
+
+STRIPE_TEST_SECRET_KEY = os.environ.get("STRIPE_TEST_SECRET_KEY", "")
+STRIPE_TEST_PUBLIC_KEY = os.environ.get("STRIPE_TEST_PUBLIC_KEY", "")
+
+STRIPE_LIVE_SECRET_KEY = os.environ.get("STRIPE_LIVE_SECRET_KEY", "")
+STRIPE_LIVE_PUBLIC_KEY = os.environ.get("STRIPE_LIVE_PUBLIC_KEY", "")
+
+STRIPE_SECRET_KEY = STRIPE_LIVE_SECRET_KEY if STRIPE_LIVE_MODE else STRIPE_TEST_SECRET_KEY
+STRIPE_PUBLIC_KEY = STRIPE_LIVE_PUBLIC_KEY if STRIPE_LIVE_MODE else STRIPE_TEST_PUBLIC_KEY
+
+DJSTRIPE_WEBHOOK_SECRET = os.environ.get("DJSTRIPE_WEBHOOK_SECRET", "")
 DJSTRIPE_USE_NATIVE_JSONFIELD = True
-
-STRIPE_JOB_POSTING_PRICE_ID = ""
-STRIPE_UNLIMITED_POSTING_PRICE_ID = ""
-
-STRIPE_SUCCESS_URL = "http://localhost:3000/success"
-STRIPE_CANCEL_URL = "http://localhost:3000/cancel"
-
-STRIPE_JOB_CREDIT_WEBHOOK_SECRET = ""
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
 
-# -----------------------------
-# OFFLINE MODE SECURITY
-# No HTTPS, no HSTS, no redirects
-# -----------------------------
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-SECURE_SSL_REDIRECT = False
+STRIPE_JOB_POSTING_PRICE_ID = os.environ.get("STRIPE_JOB_POSTING_PRICE_ID", "")
+STRIPE_UNLIMITED_POSTING_PRICE_ID = os.environ.get("STRIPE_UNLIMITED_POSTING_PRICE_ID", "")
+
+STRIPE_SUCCESS_URL = os.environ.get("STRIPE_SUCCESS_URL", "http://localhost:3000/success")
+STRIPE_CANCEL_URL = os.environ.get("STRIPE_CANCEL_URL", "http://localhost:3000/cancel")
+
+STRIPE_JOB_CREDIT_WEBHOOK_SECRET = os.environ.get("STRIPE_JOB_CREDIT_WEBHOOK_SECRET", "")
+
+
+# ==========================
+# SECURITY (PROD vs LOCAL)
+# ==========================
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+if not DEBUG:
+    # Production security hardening
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+else:
+    # Local / offline dev: do NOT force HTTPS
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
 
