@@ -5,33 +5,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
-
 from djstripe.models import Customer
-
 from .models import User, Company, Job
 from .serializers import CompanySerializer, JobSerializer
 from .permissions import ensure_user_can_post_job
 from .filters import JobFilter, CompanyFilter
-
 from rest_framework.pagination import PageNumberPagination
 
-
-stripe.api_key = (
-    settings.STRIPE_LIVE_SECRET_KEY
-    if getattr(settings, "STRIPE_LIVE_MODE", False)
-    else settings.STRIPE_TEST_SECRET_KEY
-)
+stripe.api_key = settings.STRIPE_LIVE_SECRET_KEY
 
 
 class StandardPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = "page_size"
     max_page_size = 100
-
-
-# ===============================
-#        COMPANIES
-# ===============================
 
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all().order_by("-created_at")
@@ -55,11 +42,6 @@ class CompanyViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Only company accounts may create companies.")
 
         serializer.save(owner=user)
-
-
-# ===============================
-#            JOBS
-# ===============================
 
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all().order_by("-created_at")
@@ -109,11 +91,6 @@ class JobViewSet(viewsets.ModelViewSet):
 
         return super().perform_destroy(instance)
 
-
-# ===============================
-#       STRIPE CHECKOUT
-# ===============================
-
 class CreateJobPostingCheckoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -141,7 +118,6 @@ class CreateJobPostingCheckoutView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"url": checkout_session.url}, status=status.HTTP_201_CREATED)
-
 
 class CreateSubscriptionCheckoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -171,11 +147,6 @@ class CreateSubscriptionCheckoutView(APIView):
 
         return Response({"url": checkout_session.url}, status=status.HTTP_201_CREATED)
 
-
-# ===============================
-#      WEBHOOK FOR ONE-TIME CREDIT
-# ===============================
-
 class JobCreditWebhookView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -204,4 +175,3 @@ class JobCreditWebhookView(APIView):
                         pass
 
         return Response(status=status.HTTP_200_OK)
-
