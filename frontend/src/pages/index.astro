@@ -1,11 +1,26 @@
 ---
 import Welcome from '../components/Welcome.astro';
+import SkillsShowcase from '../components/SkillsShowcase.vue';
+import JobFilters from '../components/JobFilters.vue';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
 <Layout>
 	<Welcome />
+	<div class="container mx-auto px-4 py-8">
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+			<SkillsShowcase client:load />
+			<JobFilters client:load />
+		</div>
+
+		<div class="alert alert-success shadow-lg">
+			<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+			</svg>
+			<div>
+				<h3 class="font-bold">Vue.js Integration Complete!</h3>
+				<div class="text-xs">Astro + Vue.js + TypeScript + DaisyUI working perfectly</div>
+			</div>
+		</div>
+	</div>
 </Layout>
