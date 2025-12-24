@@ -12,8 +12,13 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='job',
-            name='atlanta_neighborhood',
-            field=models.CharField(blank=True, choices=[('MIDTOWN', 'Midtown'), ('TECH_SQUARE', 'Tech Square'), ('PONCE_CITY', 'Ponce City Market'), ('CENTENNIAL_PARK', 'Centennial Park'), ('EAV', 'East Atlanta Village'), ('LITTLE_FIVE', 'Little Five Points'), ('GRANT_PARK', 'Grant Park'), ('WESTSIDE', 'Westside'), ('VIRGINIA_HIGHLAND', 'Virginia Highland'), ('DECATUR', 'Decatur'), ('SANDY_SPRINGS', 'Sandy Springs'), ('ROSWELL', 'Roswell'), ('MARIETTA', 'Marietta'), ('ALPHARETTA', 'Alpharetta'), ('DULUTH', 'Duluth'), ('JOHNSCREEK', 'Johns Creek'), ('SMYRNA', 'Smyrna'), ('KENNESAW', 'Kennesaw'), ('OTHER', 'Other Atlanta Area')], db_index=True, help_text='Specific Atlanta neighborhood or metro area location', max_length=20, null=True),
+            name='remote_level',
+            field=models.CharField(blank=True, choices=[('FULL_REMOTE', 'Fully Remote'), ('HYBRID_OPTIONAL', 'Hybrid Optional'), ('HYBRID_REQUIRED', 'Hybrid Required'), ('ONSITE', 'On-site Required')], db_index=True, help_text='Remote work policy for this position', max_length=20, null=True),
+        ),
+        migrations.AddField(
+            model_name='job',
+            name='async_level',
+            field=models.CharField(blank=True, choices=[('FULL_ASYNC', 'Fully Asynchronous'), ('MOSTLY_ASYNC', 'Mostly Asynchronous'), ('SOME_SYNC', 'Some Synchronous Work'), ('TRADITIONAL', 'Traditional Schedule')], db_index=True, help_text='Asynchronous work level required', max_length=20, null=True),
         ),
         migrations.RenameField(
             model_name='job',
