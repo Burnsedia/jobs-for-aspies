@@ -254,13 +254,22 @@ class Job(models.Model):
         validators=[validate_https_url],
     )
 
-    atlanta_neighborhood = models.CharField(
+    remote_level = models.CharField(
         max_length=20,
-        choices=ATLANTA_NEIGHBORHOOD_CHOICES,
+        choices=REMOTE_POLICY_CHOICES,
         blank=True,
         null=True,
         db_index=True,
-        help_text="Specific Atlanta neighborhood or metro area location",
+        help_text="Remote work policy for this position",
+    )
+
+    async_level = models.CharField(
+        max_length=20,
+        choices=ASYNC_LEVEL_CHOICES,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Asynchronous work level required",
     )
 
     location = models.CharField(

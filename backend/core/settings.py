@@ -32,7 +32,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 # Comma-separated list in env for prod, fallback to localhost only
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,testserver").split(",")
     if host.strip()
 ]
 

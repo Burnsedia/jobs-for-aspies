@@ -54,7 +54,8 @@ class BaseAPITest(TestCase):
             max_salary=150000,
             job_type="FT",
             work_mode="REMOTE",
-            atlanta_neighborhood="TECH_SQUARE",
+            remote_level="FULL_REMOTE",
+            async_level="FULL_ASYNC",
             requirements="Python",
             responsibilities="Build features",
             is_remote_friendly=True,
@@ -66,7 +67,7 @@ class AuthTests(BaseAPITest):
         response = self.client.post("/auth/users/", {
             "username": "newuser",
             "password": "mypass123",
-            "password_retype": "mypass123"
+            "re_password": "mypass123"
         })
         self.assertEqual(response.status_code, 201)
 
