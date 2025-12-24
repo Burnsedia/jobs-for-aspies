@@ -1,32 +1,33 @@
-# AspieJobs
+# AsyncSkills
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-AGPLv3-blue)
 ![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange)
 
-**A job board designed with the autistic community in mind, connecting neurodivergent talent with inclusive employers.**
+**A skills-first job board for remote/async work, connecting talent through portfolios and demonstrable abilities instead of traditional interviews.**
 
 ## Our Mission
 
-The modern workplace can be a challenging environment to navigate for autistic individuals. AspieJobs aims to bridge this gap by creating a platform where job seekers can find roles at companies that are genuinely committed to neurodiversity and inclusion. We focus on highlighting job attributes that matter, such as sensory-friendly environments, flexible schedules, and clear communication protocols, making the job search process more transparent and accessible.
+Traditional job interviews often focus on "tell me about yourself" questions that disadvantage skilled professionals who struggle with social communication. AsyncSkills revolutionizes hiring by emphasizing demonstrable skills, portfolios, and take-home projects. We connect talented individuals with companies offering remote and asynchronous work arrangements, creating opportunities for everyone to showcase their abilities on their own terms.
 
 ## Key Features
 
-*   **Neurodiversity-First Filtering:** Search for jobs using tags that are critical for the autistic community (e.g., `Sensory-Friendly`, `Flexible Schedule`, `Mentorship Provided`).
-*   **Curated Job Listings:** Jobs are sourced and curated to ensure they are from companies that value neurodivergent talent.
-*   **In-Depth Company Profiles:** Learn about a company's culture and their commitment to inclusion before you apply.
-*   **AI-Powered Matching:** (Coming Soon!) A system to match user profiles with the most suitable job openings based on skills and neurodiversity needs.
+*   **Skills-First Matching:** Showcase your portfolio and GitHub projects instead of traditional resumes and interviews.
+*   **Remote/Async Focus:** Jobs specifically designed for remote work and asynchronous communication.
+*   **Take-Home Projects:** Companies can create coding challenges and skill assessments for candidates.
+*   **Portfolio Integration:** Direct GitHub OAuth integration to display your repositories and contributions.
+*   **Inclusive Hiring:** Designed to reduce bias by focusing on demonstrable skills over social interviews.
 
 ## Tech Stack
 
 *   **Backend:** Python, Django, Django REST Framework
 *   **Frontend:** Astro, Vue.js
-*   **Database:** PostgreSQL
-*   **Libraries:** `django-taggit` for tagging, `Scrapy` for data scraping.
+*   **Database:** SQLite (development) / PostgreSQL (production)
+*   **Libraries:** `django-taggit` for tagging, `Scrapy` for data scraping, `dj-stripe` for payments
 
 ## Getting Started
 
-This project is a decoupled application with a Django backend and an Astro/Vue frontend.
+This project is a decoupled application with a Django backend and an Astro/Vue frontend, specifically designed for Atlanta's tech job market.
 
 ### Prerequisites
 
@@ -39,24 +40,24 @@ This project is a decoupled application with a Django backend and an Astro/Vue f
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/aspiejobs.git
-cd aspiejobs/backend
+git clone https://github.com/your-username/asyncskills.git
+cd asyncskills/backend
 
 # Install dependencies
-poetry install
+pip install -r requirements.txt
 
 # Apply migrations
-poetry run python manage.py migrate
+python manage.py migrate
 
 # Run the development server
-poetry run python manage.py runserver
+python manage.py runserver
 ```
 
 ### Frontend Setup
 
 ```bash
 # In a new terminal, navigate to the frontend directory
-cd aspiejobs/frontend
+cd asyncskills/frontend
 
 # Install dependencies
 npm install
@@ -74,3 +75,5 @@ Please read our `CONTRIBUTING.md` file for details on our code of conduct and th
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 - see the `LICENSE` file for details.
+
+The AGPLv3 ensures that AsyncSkills remains free and open source. If you deploy this software as a service, you must also make your modifications available under AGPLv3. This protects the community's access to the codebase while allowing commercial use.
