@@ -3,7 +3,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from unittest.mock import patch
 
-from api.models import User, Company, Job
+from api.models import User, Company, Job, Portfolio, Project
 
 
 def authenticate(client, username, password):
@@ -31,7 +31,7 @@ class BaseAPITest(TestCase):
         self.user_regular = User.objects.create_user(
             username="regular",
             password="testpass",
-            role="USER",
+            role="JOB_SEEKER",
         )
 
         # Company
@@ -133,12 +133,43 @@ class JobAPITests(BaseAPITest):
             "max_salary": 90000,
             "job_type": "FT",
             "work_mode": "REMOTE",
-            "atlanta_neighborhood": "MIDTOWN",
+            "remote_level": "FULL_REMOTE",
+            "async_level": "FULL_ASYNC",
             "tech_tags": ["python", "django"],
         }
 
         response = self.client.post("/api/jobs/", payload)
         self.assertEqual(response.status_code, 201)
+
+    def test_filter_jobs_by_skills(self):
+        # Create a job with specific skills
+        job = Job.objects.create(
+            title="Frontend Developer",
+            description="React development",
+            company=self.company,
+            posted_by=self.user_company,
+            job_type="FT",
+            work_mode="REMOTE",
+            remote_level="FULL_REMOTE",
+            async_level="FULL_ASYNC",
+            requirements="JavaScript, React",
+        )
+        job.tech_tags.add("react", "javascript")
+
+        # Test filtering by skills
+        response = self.client.get("/api/jobs/?tech_tags__name=react")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+
+    def test_filter_jobs_by_remote_level(self):
+        response = self.client.get("/api/jobs/?remote_level=FULL_REMOTE")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+
+    def test_filter_jobs_by_async_level(self):
+        response = self.client.get("/api/jobs/?async_level=FULL_ASYNC")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
 
 class StripeTests(BaseAPITest):
 
@@ -180,3 +211,115 @@ class WebhookTests(BaseAPITest):
 
         self.user_company.refresh_from_db()
         self.assertTrue(self.user_company.has_active_job_posting_plan)
+
+
+class PortfolioAPITests(BaseAPITest):
+
+    def setUp(self):
+        super().setUp()
+        # Create portfolio for the regular user
+        self.portfolio = Portfolio.objects.create(
+            user=self.user_regular,
+            bio="Experienced Python developer",
+            years_experience=5,
+            available_for_hire=True,
+            open_to_remote=True,
+        )
+        self.portfolio.skills.add("python", "django", "react")
+
+        # Create a project
+        self.project = Project.objects.create(
+            portfolio=self.portfolio,
+            title="E-commerce Platform",
+            description="Built a full-stack e-commerce solution",
+            tech_stack=["python", "django", "react"],
+            github_url="https://github.com/user/ecommerce",
+            live_url="https://ecommerce-demo.com",
+        )
+
+    def test_get_portfolio_list(self):
+        authenticate(self.client, "regular", "testpass")
+        response = self.client.get("/api/portfolios/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+
+    def test_get_portfolio_detail(self):
+        authenticate(self.client, "regular", "testpass")
+        response = self.client.get(f"/api/portfolios/{self.portfolio.id}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["bio"], "Experienced Python developer")
+
+    def test_create_portfolio(self):
+        # Create a new user for this test
+        new_user = User.objects.create_user(
+            username="portfolio_user",
+            password="testpass",
+            role="JOB_SEEKER",
+        )
+
+        authenticate(self.client, "portfolio_user", "testpass")
+        payload = {
+            "bio": "Full-stack developer specializing in React and Node.js",
+            "years_experience": 3,
+            "skills": ["react", "nodejs", "typescript"],
+            "available_for_hire": True,
+            "open_to_remote": True,
+        }
+
+        response = self.client.post("/api/portfolios/", payload)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["bio"], payload["bio"])
+
+    def test_update_portfolio(self):
+        authenticate(self.client, "regular", "testpass")
+        payload = {
+            "bio": "Updated bio with more experience",
+            "years_experience": 6,
+        }
+
+        response = self.client.patch(f"/api/portfolios/{self.portfolio.id}/", payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["years_experience"], 6)
+
+    def test_get_portfolio_projects(self):
+        authenticate(self.client, "regular", "testpass")
+        response = self.client.get(f"/api/portfolios/{self.portfolio.id}/projects/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["title"], "E-commerce Platform")
+
+    def test_create_project(self):
+        authenticate(self.client, "regular", "testpass")
+        payload = {
+            "title": "Portfolio Website",
+            "description": "Personal portfolio built with Next.js",
+            "tech_stack": ["react", "nextjs", "tailwind"],
+            "github_url": "https://github.com/user/portfolio",
+            "live_url": "https://portfolio-demo.com",
+        }
+
+        response = self.client.post(f"/api/portfolios/{self.portfolio.id}/projects/", payload)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["title"], "Portfolio Website")
+
+    def test_portfolio_skills_filtering(self):
+        authenticate(self.client, "regular", "testpass")
+        response = self.client.get("/api/portfolios/?skills__name=python")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+
+    def test_portfolio_availability_filtering(self):
+        authenticate(self.client, "regular", "testpass")
+        response = self.client.get("/api/portfolios/?available_for_hire=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
+
+        response = self.client.get("/api/portfolios/?available_for_hire=false")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 0)
+
+    def test_portfolio_remote_preference_filtering(self):
+        authenticate(self.client, "regular", "testpass")
+        response = self.client.get("/api/portfolios/?open_to_remote=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["results"]), 1)
