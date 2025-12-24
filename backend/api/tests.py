@@ -43,6 +43,7 @@ class BaseAPITest(TestCase):
         )
 
         self.user_company.company_account = self.company
+        self.user_company.has_active_job_posting_plan = True  # Give them a job posting credit
         self.user_company.save()
 
         self.job = Job.objects.create(
@@ -129,6 +130,7 @@ class JobAPITests(BaseAPITest):
             "title": "Backend Engineer",
             "description": "Eng job",
             "company": self.company.id,
+            "apply_url": "https://example.com/apply",
             "min_salary": 50000,
             "max_salary": 90000,
             "job_type": "FT",
