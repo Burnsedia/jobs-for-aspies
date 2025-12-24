@@ -46,6 +46,22 @@ class User(AbstractUser):
     # One-time credit for posting a job (Stripe checkout payment)
     has_active_job_posting_plan = models.BooleanField(default=False)
 
+    # Portfolio/GitHub integration for job seekers
+    github_username = models.CharField(max_length=100, blank=True, null=True)
+    github_access_token = models.CharField(max_length=255, blank=True, null=True)  # Encrypted in production
+    portfolio_website = models.URLField(blank=True, null=True)
+    linkedin_profile = models.URLField(blank=True, null=True)
+    resume_file = models.FileField(upload_to='resumes/', blank=True, null=True)
+
+    # Skills and preferences for job seekers
+    preferred_work_mode = models.CharField(
+        max_length=10,
+        choices=[("REMOTE", "Remote"), ("ONSITE", "On-Site"), ("HYBRID", "Hybrid")],
+        default="REMOTE",
+        blank=True,
+        null=True,
+    )
+
     def __str__(self):
         return self.username
 
@@ -74,6 +90,74 @@ class User(AbstractUser):
 
         sub = customer.subscriptions.filter(status="active").first()
         return bool(sub)
+
+
+class Portfolio(models.Model):
+    """
+    Portfolio model for job seekers to showcase their skills and projects.
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='portfolio'
+    )
+
+    bio = models.TextField(blank=True, null=True, help_text="Short professional bio")
+    years_experience = models.PositiveIntegerField(default=0)
+
+    # Skills - using django-taggit for flexible tagging
+    skills = TaggableManager(blank=True, help_text="Technical skills, frameworks, tools")
+
+    # Featured projects
+    featured_project_1 = models.JSONField(blank=True, null=True, help_text="Featured project data")
+    featured_project_2 = models.JSONField(blank=True, null=True, help_text="Featured project data")
+    featured_project_3 = models.JSONField(blank=True, null=True, help_text="Featured project data")
+
+    # GitHub stats (cached)
+    github_repos_count = models.PositiveIntegerField(default=0)
+    github_stars_count = models.PositiveIntegerField(default=0)
+    github_followers_count = models.PositiveIntegerField(default=0)
+
+    # Work preferences
+    open_to_remote = models.BooleanField(default=True)
+    open_to_contract = models.BooleanField(default=False)
+    available_for_hire = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Portfolio of {self.user.username}"
+
+
+class Project(models.Model):
+    """
+    Individual projects within a portfolio.
+    """
+    portfolio = models.ForeignKey(
+        Portfolio,
+        on_delete=models.CASCADE,
+        related_name='projects'
+    )
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    github_url = models.URLField(blank=True, null=True)
+    live_url = models.URLField(blank=True, null=True)
+    tech_stack = TaggableManager(blank=True, help_text="Technologies used")
+
+    # Project metadata
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    is_featured = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.portfolio.user.username}"
+
 
 class StripeEvent(models.Model):
     """
@@ -143,6 +227,20 @@ class Job(models.Model):
         ("HYBRID", "Hybrid"),
     ]
 
+    ASYNC_LEVEL_CHOICES = [
+        ("FULL_ASYNC", "Fully Asynchronous"),
+        ("MOSTLY_ASYNC", "Mostly Asynchronous"),
+        ("SOME_SYNC", "Some Synchronous Work"),
+        ("TRADITIONAL", "Traditional Schedule"),
+    ]
+
+    REMOTE_POLICY_CHOICES = [
+        ("FULL_REMOTE", "Fully Remote"),
+        ("HYBRID_OPTIONAL", "Hybrid Optional"),
+        ("HYBRID_REQUIRED", "Hybrid Required"),
+        ("ONSITE", "On-site Required"),
+    ]
+
     title = models.CharField(max_length=255)
 
     company = models.ForeignKey(
@@ -156,11 +254,21 @@ class Job(models.Model):
         validators=[validate_https_url],
     )
 
+    atlanta_neighborhood = models.CharField(
+        max_length=20,
+        choices=ATLANTA_NEIGHBORHOOD_CHOICES,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Specific Atlanta neighborhood or metro area location",
+    )
+
     location = models.CharField(
         max_length=255,
         blank=True,
         null=True,
         db_index=True,
+        help_text="Additional location details (building, floor, etc.)",
     )
 
     job_type = models.CharField(
@@ -195,12 +303,13 @@ class Job(models.Model):
         null=True,
     )
 
-    tags = TaggableManager(blank=True)
+    # Tech-focused tags: "frontend", "backend", "devops", "data-science", etc.
+    tech_tags = TaggableManager(blank=True)
 
-    sensory_warnings = models.TextField(blank=True, null=True)
-    interview_accommodations = models.TextField(blank=True, null=True)
+    benefits = models.TextField(blank=True, null=True, help_text="Company benefits and perks")
+    interview_process = models.TextField(blank=True, null=True, help_text="Description of interview process")
 
-    is_autism_friendly = models.BooleanField(default=False)
+    is_remote_friendly = models.BooleanField(default=False, help_text="Company has strong remote work culture")
 
     posted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -214,9 +323,9 @@ class Job(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
-        if self.is_autism_friendly and self.work_mode == "ONSITE":
+        if self.is_remote_friendly and self.work_mode == "ONSITE":
             raise ValidationError(
-                {"work_mode": "Autism-friendly jobs must be Remote or Hybrid."}
+                {"work_mode": "Remote-friendly jobs should be Remote or Hybrid."}
             )
 
     def save(self, *args, **kwargs):
