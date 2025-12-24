@@ -1,6 +1,6 @@
-# AspieJobs Development Roadmap
+# AsyncSkills Development Roadmap
 
-This document outlines the planned features and development phases for the AspieJobs project. Our goal is to build a comprehensive and valuable platform for the autistic community.
+This document outlines the planned features and development phases for the AsyncSkills project. Our goal is to build a skills-first job board that revolutionizes hiring by focusing on portfolios and demonstrable abilities rather than traditional interviews.
 
 This project is licensed under the AGPLv3. All contributions are subject to this license.
 
@@ -11,13 +11,14 @@ This project is licensed under the AGPLv3. All contributions are subject to this
 This phase focuses on launching a functional, public job board that delivers immediate value to job seekers.
 
 *   **Backend API:** Develop a robust REST API with Django and Django REST Framework.
-*   **Database Schema:** Define models for `Job`, `Company`, and `Tag`.
-*   **Tagging System:** Implement a tagging system for job attributes using `django-taggit`.
-*   **Job Scraping:** Create a cron job or management command using `Scrapy` to automatically populate the job board from various sources.
-*   **Admin Job Approval:** Use the Django Admin panel for manual review and approval of all jobs.
+*   **Database Schema:** Define models for `Job`, `Company`, `Portfolio`, and skills-based matching.
+*   **Portfolio Integration:** Implement GitHub OAuth and portfolio showcase functionality.
+*   **Skills Tagging:** Create a comprehensive skills taxonomy using `django-taggit`.
+*   **Take-Home Projects:** Build a secure platform for coding challenges and skill assessments.
+*   **Company Onboarding:** Streamline company profiles with remote/async work focus.
 *   **Frontend Application:** Build the user-facing website with Astro and Vue.js.
-*   **Core Pages:** Develop the Job Listings page, Job Detail page, and Company Profile pages.
-*   **Filtered Search:** Implement the front-end logic for filtering jobs by keywords, location, and the neurodiversity-specific tags.
+*   **Core Pages:** Develop Portfolio showcase, Skills-based job search, and Take-home project submission.
+*   **Filtered Search:** Implement skills-based filtering and remote/async work preferences.
 
 ---
 
@@ -25,11 +26,11 @@ This phase focuses on launching a functional, public job board that delivers imm
 
 Once the core platform is stable and has an audience, we will introduce personalization features.
 
-*   **User Accounts:** Implement a system for job seekers to sign up, log in, and create profiles.
-*   **User Profiles:** Allow users to save their skills, experience, and, most importantly, their preferred workplace attributes and tags.
-*   **AI Matching Engine:** Develop a system to analyze job descriptions and user profiles to generate a "match score."
-*   **Personalized Job Feeds:** Display a "Recommended for You" section for logged-in users.
-*   **Email Job Alerts:** Allow users to subscribe to email notifications for new jobs that match their profile.
+*   **Portfolio Accounts:** Implement GitHub OAuth integration for seamless portfolio showcasing.
+*   **Skills Profiles:** Allow users to highlight demonstrable skills through projects and repositories.
+*   **Skills Matching Engine:** Develop AI-powered matching based on demonstrated skills and portfolio analysis.
+*   **Personalized Job Feeds:** Display "Skills Match" recommendations based on portfolio analysis.
+*   **Project-Based Applications:** Enable take-home project submissions as an alternative to traditional interviews.
 
 ---
 
@@ -37,10 +38,10 @@ Once the core platform is stable and has an audience, we will introduce personal
 
 This phase focuses on ensuring the long-term sustainability of the project.
 
-*   **Employer Accounts:** Create a full dashboard for employers to log in, post jobs directly, and manage their company profile.
-*   **Payment Integration:** Integrate a payment processor (e.g., Stripe) to allow for paid job postings.
-*   **Featured Jobs:** Allow employers to pay to have their jobs featured on the homepage or at the top of search results.
-*   **Analytics:** Provide simple analytics for employers on their job post performance.
+*   **Company Dashboard:** Create comprehensive employer tools for posting jobs and managing remote/async work policies.
+*   **Subscription Model:** Implement tiered subscriptions (Free basic, Premium unlimited, Enterprise custom).
+*   **Project Management:** Allow companies to create and manage take-home coding projects.
+*   **Analytics:** Provide insights on applicant skills distribution and hiring funnel performance.
 
 ---
 
@@ -48,10 +49,10 @@ This phase focuses on ensuring the long-term sustainability of the project.
 
 This phase focuses on expanding the platform's reach and building a community.
 
-*   **Progressive Web App (PWA):** Enhance the web application with full PWA capabilities for offline access and an installable experience.
-*   **App Store Submission:** Package the PWA for submission to the Google Play Store and Apple App Store (pending quality guidelines).
-*   **Community Forum:** Consider adding a forum or discussion board for users to share experiences and advice.
-*   **Resource Library:** Build a collection of articles, guides, and resources for both job seekers and employers on neurodiversity in the workplace.
+*   **Progressive Web App (PWA):** Enhance the platform with offline portfolio access and mobile-optimized skills showcasing.
+*   **Mobile Apps:** Develop native apps for seamless portfolio management and job application on mobile devices.
+*   **Community Features:** Build a community platform for sharing project ideas and collaboration opportunities.
+*   **Skills Development:** Create a resource library for skill-building guides and portfolio improvement tips.
 
 ## How to Contribute
 
