@@ -50,7 +50,7 @@ class CompanySerializer(TaggitSerializer, serializers.ModelSerializer):
 
 class JobSerializer(TaggitSerializer, serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
-    tags = TagListSerializerField(required=False)
+    tech_tags = TagListSerializerField(required=False)
 
     class Meta:
         model = Job
@@ -59,6 +59,7 @@ class JobSerializer(TaggitSerializer, serializers.ModelSerializer):
             "title",
             "company",
             "apply_url",
+            "atlanta_neighborhood",
             "location",
             "job_type",
             "work_mode",
@@ -67,34 +68,34 @@ class JobSerializer(TaggitSerializer, serializers.ModelSerializer):
             "requirements",
             "min_salary",
             "max_salary",
-            "tags",
-            "sensory_warnings",
-            "interview_accommodations",
-            "is_autism_friendly",
+            "tech_tags",
+            "benefits",
+            "interview_process",
+            "is_remote_friendly",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["created_at", "updated_at"]
 
-    def validate_tags(self, value):
+    def validate_tech_tags(self, value):
         value = [t.lower() for t in value]
         if len(value) > 10:
-            raise serializers.ValidationError("You can assign at most 10 tags.")
+            raise serializers.ValidationError("You can assign at most 10 tech tags.")
         return value
 
     def validate(self, attrs):
         instance = self.instance
-        is_autism_friendly = attrs.get(
-            "is_autism_friendly",
-            getattr(instance, "is_autism_friendly", False) if instance else False,
+        is_remote_friendly = attrs.get(
+            "is_remote_friendly",
+            getattr(instance, "is_remote_friendly", False) if instance else False,
         )
         work_mode = attrs.get(
             "work_mode",
             getattr(instance, "work_mode", None) if instance else None,
         )
 
-        if is_autism_friendly and work_mode == "ONSITE":
+        if is_remote_friendly and work_mode == "ONSITE":
             raise serializers.ValidationError(
-                {"work_mode": "Autism-friendly jobs must be Remote or Hybrid."}
+                {"work_mode": "Remote-friendly jobs should be Remote or Hybrid."}
             )
         return attrs

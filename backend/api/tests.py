@@ -52,11 +52,12 @@ class BaseAPITest(TestCase):
             posted_by=self.user_company,
             min_salary=100000,
             max_salary=150000,
-            job_type="FULL_TIME",
+            job_type="FT",
             work_mode="REMOTE",
+            atlanta_neighborhood="TECH_SQUARE",
             requirements="Python",
             responsibilities="Build features",
-            is_autism_friendly=True,
+            is_remote_friendly=True,
         )
 
 class AuthTests(BaseAPITest):
@@ -129,8 +130,10 @@ class JobAPITests(BaseAPITest):
             "company": self.company.id,
             "min_salary": 50000,
             "max_salary": 90000,
-            "job_type": "FULL_TIME",
+            "job_type": "FT",
             "work_mode": "REMOTE",
+            "atlanta_neighborhood": "MIDTOWN",
+            "tech_tags": ["python", "django"],
         }
 
         response = self.client.post("/api/jobs/", payload)
