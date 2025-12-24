@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from taggit.serializers import TaggitSerializer, TagListSerializerField
-from .models import User, Company, Job
+from .models import User, Company, Job, Portfolio, Project
 from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerializer
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from rest_framework import serializers
@@ -59,7 +59,8 @@ class JobSerializer(TaggitSerializer, serializers.ModelSerializer):
             "title",
             "company",
             "apply_url",
-            "atlanta_neighborhood",
+            "remote_level",
+            "async_level",
             "location",
             "job_type",
             "work_mode",
@@ -99,3 +100,57 @@ class JobSerializer(TaggitSerializer, serializers.ModelSerializer):
                 {"work_mode": "Remote-friendly jobs should be Remote or Hybrid."}
             )
         return attrs
+
+
+class ProjectSerializer(TaggitSerializer, serializers.ModelSerializer):
+    tech_stack = TagListSerializerField(required=False)
+
+    class Meta:
+        model = Project
+        fields = [
+            "id",
+            "title",
+            "description",
+            "github_url",
+            "live_url",
+            "tech_stack",
+            "start_date",
+            "end_date",
+            "is_featured",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class PortfolioSerializer(TaggitSerializer, serializers.ModelSerializer):
+    skills = TagListSerializerField(required=False)
+    projects = ProjectSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Portfolio
+        fields = [
+            "id",
+            "user",
+            "bio",
+            "years_experience",
+            "skills",
+            "featured_project_1",
+            "featured_project_2",
+            "featured_project_3",
+            "github_repos_count",
+            "github_stars_count",
+            "github_followers_count",
+            "open_to_remote",
+            "open_to_contract",
+            "available_for_hire",
+            "created_at",
+            "updated_at",
+            "projects",
+        ]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
