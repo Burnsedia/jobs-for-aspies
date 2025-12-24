@@ -1,7 +1,3 @@
----
-// Example Vue component for AsyncSkills
----
-
 <template>
   <div class="bg-base-200 p-6 rounded-lg">
     <h2 class="text-2xl font-bold mb-4">Skills Showcase</h2>
