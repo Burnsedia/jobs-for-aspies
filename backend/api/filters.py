@@ -1,7 +1,7 @@
 # api/filters.py
 import django_filters
 from taggit.models import Tag
-from .models import Job, Company
+from .models import Job, Company, Portfolio
 
 class JobFilter(django_filters.FilterSet):
     tech_tags = django_filters.ModelMultipleChoiceFilter(
@@ -33,4 +33,20 @@ class CompanyFilter(django_filters.FilterSet):
         model = Company
         fields = {
             "name": ["icontains"],
+        }
+
+
+class PortfolioFilter(django_filters.FilterSet):
+    skills = django_filters.ModelMultipleChoiceFilter(
+        field_name="skills__name",
+        to_field_name="name",
+        queryset=Tag.objects.all(),
+    )
+
+    class Meta:
+        model = Portfolio
+        fields = {
+            "available_for_hire": ["exact"],
+            "open_to_remote": ["exact"],
+            "years_experience": ["gte", "lte"],
         }

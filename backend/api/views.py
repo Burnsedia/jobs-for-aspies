@@ -6,8 +6,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from djstripe.models import Customer
-from .models import User, Company, Job
-from .serializers import CompanySerializer, JobSerializer
+from .models import User, Company, Job, Portfolio, Project
+from .serializers import CompanySerializer, JobSerializer, PortfolioSerializer, ProjectSerializer
+from .filters import JobFilter, CompanyFilter, PortfolioFilter
 from .permissions import ensure_user_can_post_job
 from .filters import JobFilter, CompanyFilter
 from rest_framework.pagination import PageNumberPagination
@@ -90,6 +91,95 @@ class JobViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("You can only delete jobs for your own company.")
 
         return super().perform_destroy(instance)
+
+
+class PortfolioViewSet(viewsets.ModelViewSet):
+    serializer_class = PortfolioSerializer
+    pagination_class = StandardPagination
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = PortfolioFilter
+    search_fields = ["bio", "user__username"]
+    ordering_fields = ["created_at", "years_experience"]
+
+    def get_queryset(self):
+        return Portfolio.objects.all().order_by("-created_at").prefetch_related("projects", "skills")
+
+    def get_permissions(self):
+        if self.request.method in ["GET", "HEAD", "OPTIONS"]:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        if user.role != "JOB_SEEKER":
+            raise PermissionDenied("Only job seekers may create portfolios.")
+
+        # Check if user already has a portfolio
+        if hasattr(user, 'portfolio'):
+            raise PermissionDenied("You already have a portfolio. Use PATCH to update it.")
+
+        serializer.save(user=user)
+
+
+class ProjectViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectSerializer
+
+    def get_queryset(self):
+        queryset = Project.objects.all().order_by("-created_at").prefetch_related("tech_stack")
+
+        # Filter by portfolio if portfolio_pk is in URL
+        portfolio_pk = self.kwargs.get('portfolio_pk')
+        if portfolio_pk:
+            queryset = queryset.filter(portfolio_id=portfolio_pk)
+
+        return queryset
+
+    def get_permissions(self):
+        if self.request.method in ["GET", "HEAD", "OPTIONS"]:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        portfolio_pk = self.kwargs.get('portfolio_pk')
+
+        if portfolio_pk:
+            # Nested route - portfolio from URL
+            try:
+                portfolio = Portfolio.objects.get(id=portfolio_pk, user=user)
+            except Portfolio.DoesNotExist:
+                raise PermissionDenied("Portfolio not found or you don't own it.")
+        else:
+            # Direct route - portfolio from request data
+            portfolio_id = self.request.data.get('portfolio')
+            if not portfolio_id:
+                raise PermissionDenied("Portfolio ID is required.")
+            try:
+                portfolio = Portfolio.objects.get(id=portfolio_id, user=user)
+            except Portfolio.DoesNotExist:
+                raise PermissionDenied("You can only create projects for your own portfolio.")
+
+        serializer.save(portfolio=portfolio)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        project = self.get_object()
+
+        if project.portfolio.user != user:
+            raise PermissionDenied("You can only edit projects in your own portfolio.")
+
+        return super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+
+        if instance.portfolio.user != user:
+            raise PermissionDenied("You can only delete projects from your own portfolio.")
+
+        return super().perform_destroy(instance)
+
 
 class CreateJobPostingCheckoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
